@@ -1,0 +1,24 @@
+
+stages:
+  - initial_report
+  - quick_checks
+  - midway_report
+  - builds
+  - publish
+  - final_report
+
+
+variables:
+  GITHUB_REPO_API_URL: "https://api.github.com/repos/ipbus/ipbus-firmware"
+  IPBUS_DOCKER_REGISTRY: "gitlab-registry.cern.ch/ipbus/ipbus-docker"
+
+
+include:
+  - local: '/ci/github-notifications.yml'
+  - local: '/ci/templates.yml'
+  - local: '/ci/sim.yml'
+  - local: '/ci/publish.yml'
+  - local: '/ci/vivado-checks.yml'
+  - local: '/ci/vivado-builds.yml'
+
+
