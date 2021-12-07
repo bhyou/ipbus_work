@@ -44,15 +44,9 @@ architecture behavioral of ipbus_bfm_tb is
   signal ipb_clk : std_logic := '0';
   signal ipb_rst : std_logic := '0';
 
-  signal ipbus_transactor_inputs  : t_ipbus_transactor_inputs := C_IPBUS_TRANSACTOR_INPUTS_DEFAULT;
-  signal ipbus_transactor_outputs : t_ipbus_transactor_outputs;
-
-  signal ipb_status_regs  : ipb_reg_v(NUM_IPBUS_STAT_REGISTERS-1 downto 0) := (0 => X"FFFFFF00",
-                                                                               1 => X"FFFFFF01",
-                                                                               2 => X"FFFFFF02",
-                                                                               3 => X"FFFFFF03");
-  signal ipb_control_regs : ipb_reg_v(NUM_IPBUS_CTRL_REGISTERS-1 downto 0);
-  signal ipb_control_stbs : std_logic_vector(NUM_IPBUS_CTRL_REGISTERS-1 downto 0);
+  -- declare signal for payload example
+  signal nuke, userled : std_logic ;
+  signal soft_rst      : std_logic ;
 
   --===============================================================================================
   -- Examples showing how to define IPbus transaction signals.
@@ -69,13 +63,31 @@ architecture behavioral of ipbus_bfm_tb is
   -- the ranges of read transaction boddy is fixed to 0
   -- read transaction: base_address + length (<4)
 
-  signal read_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
-         := ipbus_read_transaction(X"00000006", 1);
+  -- testing for slave0 (control/status registers with a depth of 1)
+  signal write_slv0_request_transaction : t_ipbus_transaction(bodyy(0 to 1))
+         := ipbus_write_transaction(X"00000000", 1, X"12345678");
 
-  constant C_WRITE_DATA : t_ipbus_slv_array(0 to 1)
-           := (0 => X"00000007", 1 => X"00000004");
-  signal write_request_transaction : t_ipbus_transaction(bodyy(0 to 2))
-         := ipbus_write_transaction(X"00000000", 2, C_WRITE_DATA);
+  signal read_slv0_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
+         := ipbus_read_transaction(X"00000000", 2);
+
+  -- testing for slave1 (common registers addr: X"00000002" ~ X"00000FFF")
+  constant C_WRITE_SLV1_HEAD_DATA : t_ipbus_slv_array(0 to 3)
+           := (0 => X"00001234", 1 => X"00012345", 2 => X"00123456", 3 => X"01234567");
+  signal write_slv1_head_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00000002", 4, C_WRITE_SLV1_HEAD_DATA);  -- write address 0x2 ~ 0x5
+
+  constant C_WRITE_SLV1_TAIL_DATA : t_ipbus_slv_array(0 to 3)
+           := (0 => X"FEDC0000", 1 => X"FEDCB000", 2 => X"FEDCBA00", 3 => X"FEDCBA90");
+  signal write_slv1_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00000FFC", 4, C_WRITE_TAIL_HEAD_DATA);
+
+  -- testing for slave2 1kword RAM 
+  constant C_WRITE_SLV2_RAM_DATA : t_ipbus_slv_array(0 to 3)
+           := (0 => X"FEDC0000", 1 => X"FEDCB000", 2 => X"FEDCBA00", 3 => X"FEDCBA90");
+  signal write_slv1_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00000FFC", 4, C_WRITE_SLV2_RAM_DATA);
+
+  -- testing for slave3 peephole RAM 
 
   signal non_inc_read_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
          := ipbus_non_inc_read_transaction(X"00000007", 3);
@@ -96,23 +108,20 @@ architecture behavioral of ipbus_bfm_tb is
 begin
 
   ipb_clk <= not ipb_clk after IPB_CLK_PERIOD/2;
+  sys_clk <= not sys_clk after SYS_CLK_PERIOD/2;
 
-  ipbus_ctrlreg_v_0 : entity work.ipbus_ctrlreg_v
-      generic map (
-          N_CTRL => NUM_IPBUS_CTRL_REGISTERS,
-          N_STAT => NUM_IPBUS_STAT_REGISTERS,
-          SWAP_ORDER => false
-      )
-      port map (
-          clk => ipb_clk,
-          reset => ipb_rst,
-          ipbus_in => ipbus_transactor_outputs.ipb_out,
-          ipbus_out => ipbus_transactor_inputs.ipb_in,
-          d => ipb_status_regs,
-          q => ipb_control_regs,
-          qmask => open,
-          stb => ipb_control_stbs
-      );
+  payload : entity work.payload_example
+    port map(
+      ipb_clk => ipb_clk,
+      ipb_rst => ipb_rst,
+      ipb_in => ipbus_transactor_outputs.ipb_out,
+      ipb_out => ipbus_transactor_inputs.ipb_in,
+      clk => sys_clk,
+      rst => sys_rst,
+      nuke => nuke,
+      soft_rst => soft_rst,
+      userled => userled
+    );
 
   -- Instantiate the IPbus transactor wrapper. It is necessary.
   ipbus_transactor_wrapper_0 : entity work.ipbus_transactor_wrapper
