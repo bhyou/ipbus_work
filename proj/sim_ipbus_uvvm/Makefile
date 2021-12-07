@@ -1,9 +1,8 @@
 VSTD=-2008
 
-XILINX_LIB_PATH=/home/EDAtools/Mentor/QuestaSim/2018_10.7c/xilinx_sim_libs/2020.2
-UVVM_UTIL_DIR=/home/bhyou/Library/UVVM/uvvm_util/sim/uvvm_util
-
-FIRMWARE_PRJ=/home/bhyou/chip_test/ipbus_work/src/ipbus-firmware
+#XILINX_LIB_PATH=../../xilinx_sim_libs/2020.2
+UVVM_UTIL_DIR=../../UVVM/uvvm_util/sim/uvvm_util
+FIRMWARE_PRJ=../../src/ipbus-firmware
 
 ## ipbus core file directory
 CORE_DIR=${FIRMWARE_PRJ}/components/ipbus_core/firmware/hdl
@@ -45,10 +44,10 @@ bench_file += ./tb_vip_uvvm/ipbus_transactor_wrapper.vhd
 bench_file += ./tb_vip_uvvm/ipbus_bfm_tb.vhd
 
 all: com
-com: map_unisim map_uvvm_util com_ipbus com_slave com_bench
+com: map_uvvm_util com_ipbus com_slave com_bench
 
-map_unisim:
-	@vmap UNISIM ${XILINX_LIB_PATH}/unisim 
+#map_unisim:
+#	@vmap UNISIM ${XILINX_LIB_PATH}/unisim 
 
 map_uvvm_util:
 	@vmap uvvm_util ${UVVM_UTIL_DIR}

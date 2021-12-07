@@ -114,7 +114,6 @@ architecture behavioral of ipbus_bfm_tb is
   signal read_slv0_A6_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
          := ipbus_read_transaction(X"00000006", 2);
   
-
   -- test for slave 1:  register
   constant WRITE_SLV1_HEDA_DATA : t_ipbus_slv_array(0 to 3)
       := (0 => X"0000FFFF", 1 => X"000FFFF0", 2 => X"00FFFF00", 3 => X"0FFFF000");
@@ -124,18 +123,7 @@ architecture behavioral of ipbus_bfm_tb is
   constant WRITE_SLV1_TAIL_DATA : t_ipbus_slv_array(0 to 3)
       := (0 => X"FEDC0000", 1 => X"0FEDC000", 2 => X"00FEDC00", 3 => X"000FEDC0");
   signal write_slv1_tail_request_transaction: t_ipbus_transaction(bodyy(0 to 4))
-      := ipbus_write_transaction(X"00001000")
-
-  -- test for slave 1:  register
-  constant WRITE_SLV1_HEDA_DATA : t_ipbus_slv_array(0 to 3)
-      := (0 => X"0000FFFF", 1 => X"000FFFF0", 2 => X"00FFFF00", 3 => X"0FFFF000");
-  signal write_slv1_request_transaction: t_ipbus_transaction(bodyy(0 to 4))
-      := ipbus_write_transaction(X"00000002",4,WRITE_SLV1_HEDA_DATA);
-  
-  constant WRITE_SLV1_TAIL_DATA : t_ipbus_slv_array(0 to 3)
-      := (0 => X"FEDC0000", 1 => X"0FEDC000", 2 => X"00FEDC00", 3 => X"000FEDC0");
-  signal write_slv1_tail_request_transaction: t_ipbus_transaction(bodyy(0 to 4))
-      := ipbus_write_transaction(X"00001000")
+      := ipbus_write_transaction(X"00001000",3,WRITE_SLV1_TAIL_DATA);
   --==================================================================
 
 begin
