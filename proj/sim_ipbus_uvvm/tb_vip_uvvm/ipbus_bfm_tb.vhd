@@ -18,10 +18,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-library ipbus;
-use ipbus.ipbus.all;
-use ipbus.ipbus_trans_decl.all;
-use ipbus.ipbus_reg_types.all;
+--library ipbus;
+use work.ipbus.all;
+use work.ipbus_trans_decl.all;
+use work.ipbus_reg_types.all;
 
 library uvvm_util;
 context uvvm_util.uvvm_util_context;
@@ -38,10 +38,11 @@ end entity;
 
 architecture behavioral of ipbus_bfm_tb is
 
-  constant CLK_PERIOD : time := C_IPBUS_USUAL_CLK_PERIOD; -- 31.25 MHz
+  constant IPB_CLK_PERIOD : time := C_IPBUS_USUAL_CLK_PERIOD; -- 31.25 MHz
+  constant SYS_CLK_PERIOD : time := 5 ns;                     -- 200 MHz
 
-  signal clk : std_logic := '0';
-  signal rst : std_logic := '0';
+  signal ipb_clk : std_logic := '0';
+  signal ipb_rst : std_logic := '0';
 
   signal ipbus_transactor_inputs  : t_ipbus_transactor_inputs := C_IPBUS_TRANSACTOR_INPUTS_DEFAULT;
   signal ipbus_transactor_outputs : t_ipbus_transactor_outputs;
@@ -64,6 +65,10 @@ architecture behavioral of ipbus_bfm_tb is
   -- user friendly way please submit an issue on github!
   -- In case of insufficient bodyy length you will get some error at runtime.
   --===============================================================================================
+
+  -- the ranges of read transaction boddy is fixed to 0
+  -- read transaction: base_address + length (<4)
+
   signal read_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
          := ipbus_read_transaction(X"00000006", 1);
 
@@ -90,17 +95,17 @@ architecture behavioral of ipbus_bfm_tb is
 
 begin
 
-  clk <= not clk after CLK_PERIOD/2;
+  ipb_clk <= not ipb_clk after IPB_CLK_PERIOD/2;
 
-  ipbus_ctrlreg_v_0 : entity ipbus.ipbus_ctrlreg_v
+  ipbus_ctrlreg_v_0 : entity work.ipbus_ctrlreg_v
       generic map (
           N_CTRL => NUM_IPBUS_CTRL_REGISTERS,
           N_STAT => NUM_IPBUS_STAT_REGISTERS,
           SWAP_ORDER => false
       )
       port map (
-          clk => clk,
-          reset => rst,
+          clk => ipb_clk,
+          reset => ipb_rst,
           ipbus_in => ipbus_transactor_outputs.ipb_out,
           ipbus_out => ipbus_transactor_inputs.ipb_in,
           d => ipb_status_regs,
@@ -112,24 +117,24 @@ begin
   -- Instantiate the IPbus transactor wrapper. It is necessary.
   ipbus_transactor_wrapper_0 : entity work.ipbus_transactor_wrapper
       port map (
-          clk => clk,
-          rst => rst,
+          clk => ipb_clk,
+          rst => ipb_rst,
           ipbus_transactor_inputs => ipbus_transactor_inputs,
           ipbus_transactor_outputs => ipbus_transactor_outputs
       );
 
   main: process
   begin
-    wait for 2*CLK_PERIOD;
+    wait for 2*IPB_CLK_PERIOD;
 
-    gen_pulse(rst, 2 * CLK_PERIOD, "Reset pulse");
-    wait for 2*CLK_PERIOD;
+    gen_pulse(ipb_rst, 2 * IPB_CLK_PERIOD, "Reset pulse");
+    wait for 2*IPB_CLK_PERIOD;
 
     ipbus_transact(read_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(response_transaction.bodyy(0), X"FFFFFF02", FAILURE,
                 "Checking read transaction.");
 
@@ -137,7 +142,7 @@ begin
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(ipb_control_regs(0), C_WRITE_DATA(0), FAILURE,
                 "Checking write transaction.");
     check_value(ipb_control_regs(1), C_WRITE_DATA(1), FAILURE,
@@ -147,7 +152,7 @@ begin
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(response_transaction.bodyy(0), X"FFFFFF03", FAILURE,
                 "Checking non-incrementing read transaction.");
     check_value(response_transaction.bodyy(1), X"FFFFFF03", FAILURE,
@@ -159,7 +164,7 @@ begin
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(ipb_control_regs(2), C_NON_INC_WRITE_DATA(3), FAILURE,
                 "Checking non-incrementing write transaction.");
 
@@ -167,7 +172,7 @@ begin
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(ipb_control_regs(0), X"F0000004", FAILURE,
                 "Checking read/modify/write bits transaction.");
 
@@ -175,11 +180,11 @@ begin
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
-                   clk);
+                   ipb_clk);
     check_value(ipb_control_regs(3), X"00000003", FAILURE,
                 "Checking read/modify/write sum transaction.");
 
-    wait for 5*CLK_PERIOD;
+    wait for 5*IPB_CLK_PERIOD;
     std.env.stop;
   end process;
 
