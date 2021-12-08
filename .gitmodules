@@ -1,3 +1,6 @@
 [submodule "src/ipbus-firmware"]
 	path = src/ipbus-firmware
 	url = git@github.com:ipbus/ipbus-firmware.git
+[submodule "src/UVVM"]
+	path = src/UVVM
+	url = git@github.com:UVVM/UVVM.git
