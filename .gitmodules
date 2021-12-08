@@ -1,0 +1,3 @@
+[submodule "src/ipbus-firmware"]
+	path = src/ipbus-firmware
+	url = git@github.com:ipbus/ipbus-firmware.git
