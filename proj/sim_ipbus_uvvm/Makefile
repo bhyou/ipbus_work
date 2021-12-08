@@ -1,7 +1,7 @@
 VSTD=-2008
 
 #XILINX_LIB_PATH=../../xilinx_sim_libs/2020.2
-UVVM_UTIL_DIR=../../UVVM/uvvm_util/sim/uvvm_util
+UVVM_UTIL_DIR=../../src/UVVM/uvvm_util/sim/uvvm_util
 FIRMWARE_PRJ=../../src/ipbus-firmware
 
 ## ipbus core file directory
@@ -101,5 +101,5 @@ sim_nogui: com
 .PHONY: clean
 clean:
 	rm -rf work 
-realclean:
+dclean:
 	rm -rf work transcript _Alert.txt _Log.txt
