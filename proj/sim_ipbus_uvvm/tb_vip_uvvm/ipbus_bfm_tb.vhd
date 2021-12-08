@@ -44,6 +44,12 @@ architecture behavioral of ipbus_bfm_tb is
   signal ipb_clk : std_logic := '0';
   signal ipb_rst : std_logic := '0';
 
+	signal ipbus_transactor_inputs  : t_ipbus_transactor_inputs := C_IPBUS_TRANSACTOR_INPUTS_DEFAULT;
+	signal ipbus_transactor_outputs : t_ipbus_transactor_outputs ;
+
+	signal sys_clk : std_logic := '0';
+	signal sys_rst : std_logic := '0';
+
   -- declare signal for payload example
   signal nuke, userled : std_logic ;
   signal soft_rst      : std_logic ;
@@ -64,44 +70,59 @@ architecture behavioral of ipbus_bfm_tb is
   -- read transaction: base_address + length (<4)
 
   -- testing for slave0 (control/status registers with a depth of 1)
+	constant C_WRITE_SLV0_CR_DATA : t_ipbus_slv_array(0 to 0)
+					:= (0 => X"12345678");
   signal write_slv0_request_transaction : t_ipbus_transaction(bodyy(0 to 1))
-         := ipbus_write_transaction(X"00000000", 1, X"12345678");
+         := ipbus_write_transaction(X"00000000", 1, C_WRITE_SLV0_CR_DATA);
 
   signal read_slv0_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
          := ipbus_read_transaction(X"00000000", 2);
 
-  -- testing for slave1 (common registers addr: X"00000002" ~ X"00000FFF")
-  constant C_WRITE_SLV1_HEAD_DATA : t_ipbus_slv_array(0 to 3)
+  -- testing for slave1
+	-- The slave1's address is from X"00000002" to X"00000FFF", 
+	-- however, the actual depth of it is 1.
+  constant C_WRITE_SLV1_DATA : t_ipbus_slv_array(0 to 3)
            := (0 => X"00001234", 1 => X"00012345", 2 => X"00123456", 3 => X"01234567");
-  signal write_slv1_head_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
-         := ipbus_write_transaction(X"00000002", 4, C_WRITE_SLV1_HEAD_DATA);  -- write address 0x2 ~ 0x5
+  signal write_slv1_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00000002", 1, C_WRITE_SLV1_DATA);  
 
-  constant C_WRITE_SLV1_TAIL_DATA : t_ipbus_slv_array(0 to 3)
-           := (0 => X"FEDC0000", 1 => X"FEDCB000", 2 => X"FEDCBA00", 3 => X"FEDCBA90");
-  signal write_slv1_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
-         := ipbus_write_transaction(X"00000FFC", 4, C_WRITE_TAIL_HEAD_DATA);
+	signal read_slv1_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
+					:= ipbus_read_transaction(X"00000002",1);
 
-  -- testing for slave2 1kword RAM 
-  constant C_WRITE_SLV2_RAM_DATA : t_ipbus_slv_array(0 to 3)
-           := (0 => X"FEDC0000", 1 => X"FEDCB000", 2 => X"FEDCBA00", 3 => X"FEDCBA90");
-  signal write_slv1_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
-         := ipbus_write_transaction(X"00000FFC", 4, C_WRITE_SLV2_RAM_DATA);
+  -- testing for slave2 1kword RAM X"00001000" ~ X"00001FFF"
+  constant C_WRITE_SLV2_HEAD_DATA : t_ipbus_slv_array(0 to 3)
+           := (0 => X"01020304", 1 => X"02030405", 2 => X"03040506", 3 => X"04050607");
+  signal write_slv2_head_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00001000", 4, C_WRITE_SLV2_HEAD_DATA);
 
-  -- testing for slave3 peephole RAM 
+  constant C_WRITE_SLV2_TAIL_DATA : t_ipbus_slv_array(0 to 3)
+           := (0 => X"0F0E0D0C", 1 => X"0E0D0C0B", 2 => X"0D0C0B0A", 3 => X"0C0B0A09");
+  signal write_slv2_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_write_transaction(X"00001FFC", 4, C_WRITE_SLV2_TAIL_DATA);
 
-  signal non_inc_read_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
-         := ipbus_non_inc_read_transaction(X"00000007", 3);
+	signal read_slv2_head_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
+					:= ipbus_read_transaction(X"00001000",3);
+	signal read_slv2_tail_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
+					:= ipbus_read_transaction(X"00001FFC",3);
 
-  constant C_NON_INC_WRITE_DATA : t_ipbus_slv_array(0 to 3)
-           := (0 => X"11111111", 1 => X"22222222", 2 => X"33333333", 3 => X"44444444");
-  signal non_inc_write_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
-         := ipbus_non_inc_write_transaction(X"00000002", 4, C_NON_INC_WRITE_DATA);
+  -- testing for slave3 peephole RAM: X"00002000" ~ X"00001FFF"
+  constant C_WRITE_SLV3_DATA : t_ipbus_slv_array(0 to 1)
+           := (0 => X"00000064", 1 => X"12345678");   -- address : X"64" data: X"12345678"
+  signal write_slv3_request_transaction : t_ipbus_transaction(bodyy(0 to 2))
+         := ipbus_write_transaction(X"00002000", 2, C_WRITE_SLV3_DATA);
 
-  signal rmw_bits_request_transaction : t_ipbus_transaction(bodyy(0 to 2))
-         := ipbus_rmw_bits_transaction(X"00000000", X"00000004", X"F0000000");
+	-- others operation testing
+  signal non_inc_read_slv2_request_transaction : t_ipbus_transaction(bodyy(0 to 0))
+         := ipbus_non_inc_read_transaction(X"00001001", 3);
 
-  signal rmw_sum_request_transaction : t_ipbus_transaction(bodyy(0 to 1))
-         := ipbus_rmw_sum_transaction(X"00000003", X"00000003");
+  signal non_inc_write_slv1_request_transaction : t_ipbus_transaction(bodyy(0 to 4))
+         := ipbus_non_inc_write_transaction(X"00000002", 4, C_WRITE_SLV1_DATA);
+
+  signal rmw_bits_slv1_request_transaction : t_ipbus_transaction(bodyy(0 to 2))
+         := ipbus_rmw_bits_transaction(X"00000002", X"FFFF0000", X"0000ABCD");
+
+  signal rmw_sum_slv1_request_transaction : t_ipbus_transaction(bodyy(0 to 1))
+         := ipbus_rmw_sum_transaction(X"00000002", X"00000002");
 
   signal response_transaction : t_ipbus_transaction(bodyy(0 to 2));
 
@@ -110,7 +131,7 @@ begin
   ipb_clk <= not ipb_clk after IPB_CLK_PERIOD/2;
   sys_clk <= not sys_clk after SYS_CLK_PERIOD/2;
 
-  payload : entity work.payload_example
+  payload_inst : entity work.payload
     port map(
       ipb_clk => ipb_clk,
       ipb_rst => ipb_rst,
@@ -139,58 +160,131 @@ begin
     gen_pulse(ipb_rst, 2 * IPB_CLK_PERIOD, "Reset pulse");
     wait for 2*IPB_CLK_PERIOD;
 
-    ipbus_transact(read_request_transaction,
+		-- transaction for slave 0
+    ipbus_transact(write_slv0_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(response_transaction.bodyy(0), X"FFFFFF02", FAILURE,
-                "Checking read transaction.");
+    ipbus_transact(read_slv0_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    check_value(response_transaction.bodyy(0), X"12345678", FAILURE,
+                "Checking slave 0 read transaction.");
+    check_value(response_transaction.bodyy(1), X"abcdfedc", FAILURE,
+                "Checking slave 0 read transaction.");
 
-    ipbus_transact(write_request_transaction,
+		-- transaction for slave 1
+    ipbus_transact(write_slv1_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(ipb_control_regs(0), C_WRITE_DATA(0), FAILURE,
-                "Checking write transaction.");
-    check_value(ipb_control_regs(1), C_WRITE_DATA(1), FAILURE,
-                "Checking write transaction.");
+    ipbus_transact(read_slv1_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV1_DATA(0), FAILURE,
+                "Checking slave 1 read transaction.");
 
-    ipbus_transact(non_inc_read_request_transaction,
+		-- transaction for slave 2
+    ipbus_transact(write_slv2_head_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(response_transaction.bodyy(0), X"FFFFFF03", FAILURE,
+    ipbus_transact(read_slv2_head_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV2_HEAD_DATA(0), FAILURE,
+                "Checking slave2-head ead transaction.");
+    check_value(response_transaction.bodyy(1), C_WRITE_SLV2_HEAD_DATA(1), FAILURE,
+                "Checking slave2-head read transaction.");
+    check_value(response_transaction.bodyy(2), C_WRITE_SLV2_HEAD_DATA(2), FAILURE,
+                "Checking slave2-head read transaction.");
+
+    ipbus_transact(write_slv2_tail_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    ipbus_transact(read_slv2_tail_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV2_TAIL_DATA(0), FAILURE,
+                "Checking slave2-tail read transaction.");
+    check_value(response_transaction.bodyy(1), C_WRITE_SLV2_TAIL_DATA(1), FAILURE,
+                "Checking slave2-tail read transaction.");
+    check_value(response_transaction.bodyy(2), C_WRITE_SLV2_TAIL_DATA(2), FAILURE,
+                "Checking slave2-tail read transaction.");
+
+		-- transaction for slave 3
+    ipbus_transact(write_slv3_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+
+		-- testing for other operations
+    ipbus_transact(non_inc_read_slv2_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV2_HEAD_DATA(1), FAILURE,
                 "Checking non-incrementing read transaction.");
-    check_value(response_transaction.bodyy(1), X"FFFFFF03", FAILURE,
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV2_HEAD_DATA(1), FAILURE,
                 "Checking non-incrementing read transaction.");
-    check_value(response_transaction.bodyy(2), X"FFFFFF03", FAILURE,
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV2_HEAD_DATA(1), FAILURE,
                 "Checking non-incrementing read transaction.");
 
-    ipbus_transact(non_inc_write_request_transaction,
+    ipbus_transact(non_inc_write_slv1_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(ipb_control_regs(2), C_NON_INC_WRITE_DATA(3), FAILURE,
-                "Checking non-incrementing write transaction.");
-
-    ipbus_transact(rmw_bits_request_transaction,
+    ipbus_transact(read_slv1_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(ipb_control_regs(0), X"F0000004", FAILURE,
+    check_value(response_transaction.bodyy(0), C_WRITE_SLV1_DATA(3), FAILURE,
+                "Checking non-incrementing read transaction.");
+
+
+    ipbus_transact(rmw_bits_slv1_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+    ipbus_transact(read_slv1_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+		-- (01234567 & FFFF0000) | 0000ABCD --> 0123ABCD
+    check_value(response_transaction.bodyy(0), X"0123ABCD", FAILURE,  
                 "Checking read/modify/write bits transaction.");
 
-    ipbus_transact(rmw_sum_request_transaction,
+    ipbus_transact(rmw_sum_slv1_request_transaction,
                    response_transaction,
                    ipbus_transactor_inputs,
                    ipbus_transactor_outputs,
                    ipb_clk);
-    check_value(ipb_control_regs(3), X"00000003", FAILURE,
+    ipbus_transact(read_slv1_request_transaction,
+                   response_transaction,
+                   ipbus_transactor_inputs,
+                   ipbus_transactor_outputs,
+                   ipb_clk);
+		--  0x0123ABCD + 2 = 0x0123ABCF
+    check_value(response_transaction.bodyy(0), X"0123ABCF", FAILURE,
                 "Checking read/modify/write sum transaction.");
 
     wait for 5*IPB_CLK_PERIOD;
