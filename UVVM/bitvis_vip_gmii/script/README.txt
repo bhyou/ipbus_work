@@ -1,1 +1,0 @@
-Information regarding how to run compile scripts is found in the GETTING_STARTED.md file in the top-level folder.
