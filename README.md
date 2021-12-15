@@ -27,13 +27,13 @@ In the payload example, the DUT include the following four slaves :
   - 32-bit peephole RAM 
 
 Address space of the slaves:
-  - CSR : 0x0000_0000 ~ 0x0000_0001
-    * 0x0000_0000 : Status Regsiter (only read)
-    * 0x0000_0001 : Control Regsiter (write/read)
-  - Reg : 0x0000_0002 ~ 0x0000_0FFF
+  - CSR : 0x00000000 ~ 0x00000001
+    * 0x00000000 : Status Regsiter (only read)
+    * 0x00000001 : Control Regsiter (write/read)
+  - Reg : 0x00000002 ~ 0x00000FFF
     * **actual depth is 1**
-  - RAM : 0x0000_1000 ~ 0x0000_1FFF
-  - PRAM: 0x0000_2000 ~ 0x0000_2FFF
+  - RAM : 0x00001000 ~ 0x00001FFF
+  - PRAM: 0x00002000 ~ 0x00002FFF
 
 
 ### **3. Other example**
