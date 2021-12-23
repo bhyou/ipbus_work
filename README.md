@@ -45,7 +45,8 @@ $ make sim ; # running interactive simulation with gui
 Jadpix3 Test: https://github.com/habrade/JadePix3_Firmware
 
 ## **Verification Example with SystemVerilog**
-The IPbus BFM (Bus Function Model) is implemented with systemverilog. The detail of ipbus_bfm_sv see [Readme](proc/sim_ipbus_sv/Readme.md).
+The IPbus BFM (Bus Function Model) is implemented with systemverilog. The details of ipbus_bfm_sv see [Readme](https://github.com/bhyou/ipbus_work/blob/main/proj/sim_ipbus_sv/Readme.md).
+
 ### **1. Write/Read RAM**
 Run example
 ```
