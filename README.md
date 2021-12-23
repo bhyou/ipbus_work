@@ -2,7 +2,7 @@
 
 IPbus_work is a chip test project based on IPbus. The IPbus which is a simple packet-based control protocol is developed by CERN. More details of IPbus see: https://github.com/ipbus.
 
-## **Verification Example**
+## **Verification Example with VHDL**
 Note: before running verification example, you must compile UVVM utility library:
  ```bash
   cd src/UVVM/uvvm_util/script/
@@ -33,6 +33,7 @@ Address space of the slaves:
   - RAM : 0x00001000 ~ 0x00001FFF
   - PRAM: 0x00002000 ~ 0x00002FFF
 
+
 Run Payload example command:
 ```bash 
 $ cd proj/sim_ipbus_uvvm
@@ -41,8 +42,16 @@ $ make sim ; # running interactive simulation with gui
 ```
 
 ### **3. Other example**
-Jadpix Test: https://github.com/habrade/JadePix3_Firmware
+Jadpix3 Test: https://github.com/habrade/JadePix3_Firmware
 
+## **Verification Example with SystemVerilog**
+The IPbus BFM (Bus Function Model) is implemented with systemverilog. The detail of ipbus_bfm_sv see [Readme](proc/sim_ipbus_sv/Readme.md).
+### **1. Write/Read RAM**
+Run example
+```
+$ cd proc/sim_ipbus_sv/sim
+$ make mixcom && ./simv
+```
 
 ## **Vivado Project Example**
 
